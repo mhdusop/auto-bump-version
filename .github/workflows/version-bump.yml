@@ -40,12 +40,24 @@ jobs:
               git config user.name "github-actions[bot]"
               git config user.email "github-actions[bot]@users.noreply.github.com"
 
-         - name: 🔖 Bump Version
-           run: |
-              BUMP_TYPE=${{ github.event.inputs.bump_type || 'patch' }}
-              echo "Bumping version: $BUMP_TYPE"
-              npm version $BUMP_TYPE -m "chore: bump version to %s [skip ci]"
+        - name: 🔖 Bump Version
+          run: |
+            BUMP_TYPE=${{ github.event.inputs.bump_type || 'patch' }}
+            echo "Bumping version: $BUMP_TYPE"
 
-         - name: 🚀 Push Version Tag
-           run: |
-              git push origin main --follow-tags
+            # Bump version tanpa cek git dirty
+            npm version $BUMP_TYPE --no-git-tag-version
+
+            # Ambil versi baru
+            NEW_VERSION=$(node -p "require('./package.json').version")
+            echo "New version: $NEW_VERSION"
+
+            # Commit dan tag manual
+            git add package.json
+            git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+            git tag "v$NEW_VERSION"
+
+        # 6. Push new version
+        - name: 🚀 Push Version Tag
+          run: |
+            git push origin main --follow-tags
